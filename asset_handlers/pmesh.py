@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict
 
 import bpy
 import numpy as np
@@ -7,7 +7,7 @@ from ..pragma_udm_wrapper import UdmProperty
 from ..utils import ROTN90_X, transform_vec3, get_material
 
 
-def import_pmesh(name_prefix, asset: UdmProperty, root: UdmProperty, bone_names: List[str]):
+def import_pmesh(name_prefix, asset: UdmProperty, root: UdmProperty, bone_names: Dict[int,str]):
     assert asset['assetType'] == 'PMESH'
     sub_mesh_data = asset['assetData']
     assert sub_mesh_data['geometryType'] == 'Triangles'
@@ -37,13 +37,14 @@ def import_pmesh(name_prefix, asset: UdmProperty, root: UdmProperty, bone_names:
     uv_data.data.foreach_set('uv', uvs[vertex_indices].flatten())
 
     weight_groups = {bone: mesh_obj.vertex_groups.new(name=bone) for bone in
-                     bone_names}
+                     bone_names.values()}
 
     for n, weights in enumerate(weights):
         for bone_index, weight in zip(weights['id'], weights['w']):
             if weight >= 0 and bone_index >= 0:
                 bone_name = bone_names[bone_index]
                 weight_groups[bone_name].add([n], weight, 'REPLACE')
+
 
     get_material(material_name, mesh_obj)
 

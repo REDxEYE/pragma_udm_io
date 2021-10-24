@@ -9,6 +9,7 @@ import bpy
 from mathutils import *
 
 from .asset_handlers.pmesh import import_pmesh
+from .asset_handlers.pskel import import_pskel
 from .pragma_udm_wrapper import UDM, UdmProperty
 from .utils import get_or_create_collection, get_new_unique_collection, get_material, ROTN90_X, ROT90_X, ROTN90_Z, \
     transform_vec3
@@ -24,7 +25,7 @@ class PMDLLoader:
 
         self._armature_obj = None
         self._objects = []
-        self._bone_names = []
+        self._bone_names = {}
         self.master_collection = get_new_unique_collection(self.model_name, bpy.context.scene.collection)
 
     @property
@@ -32,46 +33,7 @@ class PMDLLoader:
         return self.path.stem
 
     def load_armature(self):
-        assert self.root['skeleton/assetType'] == 'PSKEL'
-        armature_asset = self.root['skeleton/assetData']
-
-        armature = bpy.data.armatures.new(f"{self.model_name}_ARM_DATA")
-        armature_obj = bpy.data.objects.new(f"{self.model_name}_ARM", armature)
-
-        bpy.context.scene.collection.objects.link(armature_obj)
-        armature_obj.select_set(True)
-        bpy.context.view_layer.objects.active = armature_obj
-
-        bpy.ops.object.mode_set(mode='EDIT')
-
-        def _collect_bones(current_node, bones: List[UdmProperty]):
-            bones.append(current_node)
-            bone = armature.edit_bones.new(current_node.name[-63:])
-            bone.tail = (Vector([0, 1, 0])) + bone.head
-            transform = current_node['pose']
-
-            pos = Vector(transform[0:3])
-            rot = Quaternion([transform[6], *transform[3:6]])
-            scl = Vector(transform[7:10])
-            mat = Matrix.Translation(pos) @ rot.to_matrix().to_4x4() @ Matrix.Scale(1, 4, scl)
-            mat = ROT90_X @ mat
-            mat = mat @ ROTN90_Z
-            bone.matrix = mat
-
-            self._bone_names.append(current_node.name)
-
-            for child in current_node.get('children', []):
-                child_bone = _collect_bones(child, bones)
-                child_bone.parent = bone
-            return bone
-
-        all_bones = []
-        for bone in armature_asset['bones']:
-            _collect_bones(bone, all_bones)
-
-        bpy.context.scene.collection.objects.unlink(armature_obj)
-
-        self._armature_obj = armature_obj
+        self._bone_names, self._armature_obj = import_pskel(self.model_name, self.root['skeleton'])
 
     def _find_flexes_by_ids(self, mesh_group_id: int, mesh_id: int, sub_mesh_id: int):
         if 'morphTargetAnimations' in self.root:
@@ -137,6 +99,10 @@ class PMDLLoader:
     def finalize(self):
         self.master_collection.objects.link(self._armature_obj)
         for obj in self._objects:
+            modifier = obj.modifiers.new(
+                type="ARMATURE", name="Armature")
+            modifier.object = self._armature_obj
+            obj.parent = self._armature_obj
             self.master_collection.objects.link(obj)
         pass
 
