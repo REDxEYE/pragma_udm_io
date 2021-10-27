@@ -4,7 +4,7 @@ import bpy
 import numpy as np
 
 from ..pragma_udm_wrapper import UdmProperty
-from ..utils import ROTN90_X, transform_vec3, get_material
+from pragma_udm_io.utils import ROTN90_X, transform_vec3, get_material
 
 
 def import_pmesh(name_prefix, asset: UdmProperty, root: UdmProperty, bone_names: Dict[int,str]):

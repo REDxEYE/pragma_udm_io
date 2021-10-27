@@ -5,6 +5,7 @@ import random
 
 import numpy as np
 from mathutils import Euler
+from .node import Nodes
 
 ROT90_X = Euler([math.radians(90), 0, 0]).to_matrix().to_4x4()
 ROTN90_X = Euler([math.radians(-90), 0, 0]).to_matrix().to_4x4()

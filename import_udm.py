@@ -1,32 +1,30 @@
-import math
-import sys
 from collections import defaultdict
 from pathlib import Path
-from typing import List
 import numpy as np
 
 import bpy
-from mathutils import *
 
+from .asset_handlers.pmat import import_pmat
 from .asset_handlers.pmesh import import_pmesh
 from .asset_handlers.pskel import import_pskel
-from .pragma_udm_wrapper import UDM, UdmProperty
-from .utils import get_or_create_collection, get_new_unique_collection, get_material, ROTN90_X, ROT90_X, ROTN90_Z, \
-    transform_vec3
+from .content_managment.content_manager import ContentManager
+from .pragma_udm_wrapper import UDM
+from pragma_udm_io.utils import get_or_create_collection, get_new_unique_collection, ROTN90_X, transform_vec3
 
 
 class PMDLLoader:
 
     def __init__(self, path: Path):
         self.path = path
-        self._udm_file = UDM(True)
+        self._udm_file = UDM()
         assert self._udm_file.load(path), f'Failed to load "{path}"'
         self.root = self._udm_file.root
 
         self._armature_obj = None
+        self._object_by_meshgroup = defaultdict(list)
         self._objects = []
         self._bone_names = {}
-        self.master_collection = get_new_unique_collection(self.model_name, bpy.context.scene.collection)
+        self.master_collection = get_new_unique_collection(self.model_name + '_model', bpy.context.scene.collection)
 
     @property
     def model_name(self):
@@ -91,9 +89,18 @@ class PMDLLoader:
                                 attribs['position'].view(np.float16).reshape((-1, 4))[:, :3], ROTN90_X)
                             shape_key.data.foreach_set("co", flex_pos.reshape(-1))
 
+                self._object_by_meshgroup[mesh_group_id].append(mesh_obj)
                 self._objects.append(mesh_obj)
 
     def load_textures(self):
+        cm = ContentManager()
+        for mat_root in self.root['materialPaths']:
+            for mat in self.root['materials']:
+                mat_path = cm.find_path(Path('materials') / mat_root / mat, extension='.pmat')
+                if mat_path:
+                    udm_mat = UDM()
+                    udm_mat.load(mat_path)
+                    import_pmat(udm_mat.root, mat)
         pass
 
     def finalize(self):
@@ -103,11 +110,20 @@ class PMDLLoader:
                 type="ARMATURE", name="Armature")
             modifier.object = self._armature_obj
             obj.parent = self._armature_obj
-            self.master_collection.objects.link(obj)
-        pass
+            # self.master_collection.objects.link(obj)
+        if 'bodyGroups' in self.root:
+            for body_group in self.root['bodyGroups']:
+                bg_collection = get_or_create_collection(body_group.name, self.master_collection)
+                for mesh_group in body_group['meshGroups']:
+                    for obj in self._object_by_meshgroup[mesh_group]:
+                        bg_collection.objects.link(obj)
+        if 'baseMeshGroups' in self.root:
+            for base_id in self.root['baseMeshGroups']:
+                for obj in self._object_by_meshgroup[base_id]:
+                    self.master_collection.objects.link(obj)
 
     def cleanup(self):
-        # self._udm_file.destroy()
+        self._udm_file.destroy()
         pass
 
 

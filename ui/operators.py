@@ -2,7 +2,10 @@ from pathlib import Path
 
 import bpy
 from bpy.props import StringProperty, CollectionProperty, BoolProperty, FloatProperty
-from .import_udm import import_udm_model
+
+from ..content_managment.content_manager import ContentManager
+from ..import_udm import import_udm_model
+from .prefs import get_game_root
 
 
 class PRAGMA_OT_PMLDImport(bpy.types.Operator):
@@ -23,6 +26,7 @@ class PRAGMA_OT_PMLDImport(bpy.types.Operator):
             directory = Path(self.filepath).parent.absolute()
         else:
             directory = Path(self.filepath).absolute()
+        ContentManager().set_root(get_game_root())
         for n, file in enumerate(self.files):
             import_udm_model(directory / file.name)
             pass

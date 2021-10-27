@@ -4,7 +4,7 @@ import bpy
 from mathutils import Vector, Quaternion, Matrix
 
 from ..pragma_udm_wrapper import UdmProperty
-from ..utils import ROT90_X, ROTN90_Z
+from pragma_udm_io.utils import ROT90_X, ROTN90_Z
 
 
 def import_pskel(name: str, asset: UdmProperty):
