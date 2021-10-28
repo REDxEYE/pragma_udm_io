@@ -68,11 +68,15 @@ def import_pmat(asset: UdmProperty, material_name: str):
         rma.image.colorspace_settings.name = 'Non-Color'
         rma_split = create_node(material, Nodes.ShaderNodeSeparateRGB, location=(-50, -250))
         connect_nodes(material, rma.outputs['Color'], rma_split.inputs['Image'])
-        if 'roughness_factor' in properties:
+        if 'roughness_factor' in properties or 'specular_factor' in properties:
+            if 'roughness_factor' in properties:
+                roughness_factor = properties['roughness_factor']
+            else:
+                roughness_factor = 1 - properties['specular_factor']
             r_multiply = create_node(material, Nodes.ShaderNodeMath, name='Roughness-Multiplier', location=(-50, -400))
             r_multiply.operation = 'MULTIPLY'
             connect_nodes(material, rma_split.outputs['G'], r_multiply.inputs[0])
-            r_multiply.inputs[1].default_value = properties['roughness_factor']
+            r_multiply.inputs[1].default_value = roughness_factor
             connect_nodes(material, r_multiply.outputs[0], shader.inputs['Roughness'])
         else:
             connect_nodes(material, rma_split.outputs['G'], shader.inputs['Roughness'])

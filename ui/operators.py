@@ -31,8 +31,6 @@ class PRAGMA_OT_PMLDImport(bpy.types.Operator):
         ContentManager().set_root(get_game_root())
         for n, file in enumerate(self.files):
             import_pmdl(directory / file.name)
-            pass
-            # TODO: Implement me
         return {'FINISHED'}
 
     def invoke(self, context, event):
@@ -63,8 +61,6 @@ class PRAGMA_OT_PMATImport(bpy.types.Operator):
             udm.load(directory / file.name)
             print(udm, udm.root)
             import_pmat(udm.root, file.name)
-            pass
-            # TODO: Implement me
         return {'FINISHED'}
 
     def invoke(self, context, event):
