@@ -4,12 +4,12 @@ import numpy as np
 
 import bpy
 
-from .asset_handlers.pmat import import_pmat
-from .asset_handlers.pmesh import import_pmesh
-from .asset_handlers.pskel import import_pskel
-from .content_managment.content_manager import ContentManager
-from .pragma_udm_wrapper import UDM
-from pragma_udm_io.utils import get_or_create_collection, get_new_unique_collection, ROTN90_X, transform_vec3
+from ..asset_handlers.pmat import import_pmat
+from ..asset_handlers.pmesh import import_pmesh
+from ..asset_handlers.pskel import import_pskel
+from ..content_managment.content_manager import ContentManager
+from ..pragma_udm_wrapper import UDM
+from ..utils import get_or_create_collection, get_new_unique_collection, ROTN90_X, transform_vec3
 
 
 class PMDLLoader:
@@ -127,7 +127,7 @@ class PMDLLoader:
         pass
 
 
-def import_udm_model(path: Path):
+def import_pmdl(path: Path):
     loader = PMDLLoader(path)
     loader.load_armature()
     loader.load_mesh()

@@ -4,7 +4,7 @@ from pragma_udm_io.ui import *
 bl_info = {
     "name": "Pragma UDM IO",
     "author": "RED_EYE",
-    "version": (0, 0, 2),
+    "version": (0, 0, 3),
     "blender": (2, 80, 0),
     "location": "File > Import-Export > UDM assets",
     "description": "Pragma Engine assets. "
@@ -15,6 +15,8 @@ bl_info = {
 classes = (
     PragmaPluginPreferences,
     PRAGMA_OT_PMLDImport,
+    PRAGMA_OT_PMATImport,
+    PRAGMA_MT_Menu,
 )
 
 register_, unregister_ = bpy.utils.register_classes_factory(classes)
@@ -24,8 +26,7 @@ def menu_import(self, context):
     # source_io_icon = custom_icons["main"]["sourceio_icon"]
     # self.layout.menu(PRAGMA_OT_PMLDImport.bl_idname, icon_value=source_io_icon.icon_id)
     layout = self.layout
-    layout.operator(PRAGMA_OT_PMLDImport.bl_idname,
-                    text="Pramga model (.pmdl, .pmdl_b)", )  # icon_value=crowbar_icon.icon_id)
+    layout.menu(PRAGMA_MT_Menu.bl_idname)
 
 
 def register():

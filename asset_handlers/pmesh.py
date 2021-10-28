@@ -7,7 +7,7 @@ from ..pragma_udm_wrapper import UdmProperty
 from pragma_udm_io.utils import ROTN90_X, transform_vec3, get_material
 
 
-def import_pmesh(name_prefix, asset: UdmProperty, root: UdmProperty, bone_names: Dict[int,str]):
+def import_pmesh(name_prefix, asset: UdmProperty, root: UdmProperty, bone_names: Dict[int, str]):
     assert asset['assetType'] == 'PMESH'
     sub_mesh_data = asset['assetData']
     assert sub_mesh_data['geometryType'] == 'Triangles'
@@ -44,7 +44,6 @@ def import_pmesh(name_prefix, asset: UdmProperty, root: UdmProperty, bone_names:
             if weight >= 0 and bone_index >= 0:
                 bone_name = bone_names[bone_index]
                 weight_groups[bone_name].add([n], weight, 'REPLACE')
-
 
     get_material(material_name, mesh_obj)
 
