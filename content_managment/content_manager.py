@@ -19,6 +19,8 @@ class ContentManager(metaclass=SingletonMeta):
         self.root_provider: Optional[AnyContentProvider] = None
         self.root_path: Optional[Path] = None
 
+        self._path_cache = {}
+
     def set_root(self, root: Path):
         self.root_path = Path(root)
         self.root_provider = RootDirectoryProvider(self.root_path)
@@ -55,12 +57,14 @@ class ContentManager(metaclass=SingletonMeta):
         if not silent:
             logger.info(f'Requesting {new_filepath} file')
         for mod, submanager in self.content_providers.items():
-            file = submanager.find_file(new_filepath)
+            file = (submanager.find_file(new_filepath) or
+                    submanager.find_file(new_filepath.with_suffix(new_filepath.suffix + '_b')))
             if file is not None:
                 if not silent:
                     logger.debug(f'Found in {mod}!')
                 return file
-        return self.root_provider.find_file(new_filepath)
+        return (self.root_provider.find_file(new_filepath) or
+                self.root_provider.find_file(new_filepath.with_suffix(new_filepath.suffix + '_b')))
 
     def find_path(self, filepath: Union[str, Path], additional_dir=None, extension=None, *, silent=False):
         new_filepath = Path(str(filepath).strip('/\\').rstrip('/\\'))
@@ -70,15 +74,22 @@ class ContentManager(metaclass=SingletonMeta):
             new_filepath = new_filepath.with_suffix(extension)
         if not silent:
             logger.info(f'Requesting {new_filepath} file')
+
+        path = self._path_cache.get(new_filepath, -1)
+        if path != -1:
+            return path
         for mod, submanager in self.content_providers.items():
             file = (submanager.find_path(new_filepath) or
                     submanager.find_path(new_filepath.with_suffix(new_filepath.suffix + '_b')))
             if file is not None:
                 if not silent:
                     logger.debug(f'Found in {mod}!')
+                self._path_cache[new_filepath] = file
                 return file
-        return (self.root_provider.find_path(new_filepath) or
+        file = (self.root_provider.find_path(new_filepath) or
                 self.root_provider.find_path(new_filepath.with_suffix(new_filepath.suffix + '_b')))
+        self._path_cache[new_filepath] = file
+        return file
 
     def flush_cache(self):
         for cp in self.content_providers.values():

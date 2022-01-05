@@ -56,8 +56,15 @@ def append_blend(filepath, type_name, link=False):
         o.use_fake_user = True
 
 
-def transform_vec3(vec3, matrix):
+def transform_vec3_array(vec3, matrix):
     tmp = np.zeros((len(vec3), 4), dtype=vec3.dtype)
     tmp[:, :3] = vec3
     tmp = tmp @ matrix
     return tmp[:, :3]
+
+
+def transform_vec3(vec3, matrix):
+    tmp = np.zeros((4,), dtype=np.float32)
+    tmp[:3] = vec3
+    tmp = tmp @ matrix
+    return tmp[:3]

@@ -9,6 +9,10 @@ class ContentProviderBase:
 
     def __init__(self, filepath: Path):
         self.filepath = filepath
+        if self.filepath.is_file():
+            self.root = self.filepath.parent
+        else:
+            self.root = self.filepath
 
     def find_file(self, filepath: Union[str, Path]):
         raise NotImplementedError('Implement me!')
@@ -32,13 +36,6 @@ class ContentProviderBase:
 
     def flush_cache(self):
         self.__cache.clear()
-
-    @property
-    def root(self):
-        if self.filepath.is_file():
-            return self.filepath.parent
-        else:
-            return self.filepath
 
     def _find_file_generic(self, filepath: Union[str, Path], additional_dir=None, extension=None):
         filepath = Path(str(filepath).strip("\\/"))
