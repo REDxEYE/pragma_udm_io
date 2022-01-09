@@ -29,16 +29,18 @@ class PMAPLoader:
 
     def load_mesh(self, scale):
         for ent in self.root['entities']:
+            class_name = ent['className']
+            key_values = ent.get('keyValues', {})
+            print(class_name, key_values.to_dict())
             ent: UdmProperty
             transform = ent['pose']
-            key_values = ent.get('keyValues', {})
             pos = Vector(transform_vec3(transform[0:3], ROTN90_X)) * scale
             x, z, y, w = transform[3:7]
             rot = Quaternion((w, x, -y, z))
-            # rot.rotate(ROT90_Z)
             scl = Vector(transform[7:10])
-            # mat = Matrix.Translation(pos) @ rot.to_matrix().to_4x4() @ Matrix.Scale(1, 4, scl)
+            mat = Matrix.Translation(pos) @ rot.to_matrix().to_4x4() @ Matrix.Scale(1, 4, scl)
             if key_values and 'model' in key_values:
+                object_name = key_values.get('targetname', f'{class_name}_{key_values["uuid"]}')
                 if '*' in key_values['model'] or not key_values['model']:
                     continue
                 model_path = CM.find_path(key_values['model'], 'models', '.pmdl')
@@ -46,25 +48,18 @@ class PMAPLoader:
                     print(f"Failed to load {key_values['model']!r}")
                     continue
 
-                class_name = ent['className']
                 type_collection = get_or_create_collection(class_name, self.master_collection)
                 loader = import_pmdl(model_path, scale, type_collection,
                                      class_name.startswith('func_') or class_name.startswith('trigger_'))
                 if loader.is_static_prop:
                     for obj in loader.objects:
+                        obj.name = object_name
                         obj['entity_data'] = {'entity': json.loads(key_values.to_json())}
-                        obj.rotation_mode = 'QUATERNION'
-                        obj.rotation_quaternion = rot
-                        obj.location = pos
-                        obj.scale = scl
-                        # obj.matrix_basis = mat
+                        obj.matrix_basis = mat
                 else:
+                    loader.armature.name = object_name
                     loader.armature['entity_data'] = {'entity': json.loads(key_values.to_json())}
-                    loader.armature.rotation_mode = 'QUATERNION'
-                    loader.armature.rotation_quaternion = rot
-                    loader.armature.location = pos
-                    loader.armature.scale = scl
-                    # loader.armature.matrix_basis = mat
+                    loader.armature.matrix_basis = mat
 
         pass
 
