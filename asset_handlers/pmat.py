@@ -20,8 +20,8 @@ def _load_textures(textures):
         if path.suffix == '.vtf':
             image = bpy.data.images.get(texture, None)
             if image is None:
-                image_data, w, h = load_texture(path.open('rb'))
-                image = texture_from_data(texture, image_data, w, h, False)
+                image_data, *image_dimm = load_texture(path.open('rb'))
+                image = texture_from_data(texture, image_data, image_dimm, False)
         else:
             image = bpy.data.images.get(texture, None)
             if image is None:

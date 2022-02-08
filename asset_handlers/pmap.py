@@ -31,26 +31,27 @@ class PMAPLoader:
         for ent in self.root['entities']:
             class_name = ent['className']
             key_values = ent.get('keyValues', {})
-            print(class_name, key_values.to_dict())
             ent: UdmProperty
             transform = ent['pose']
             pos = Vector(transform_vec3(transform[0:3], ROTN90_X)) * scale
             x, z, y, w = transform[3:7]
+
+            # noinspection PyTypeChecker
             rot = Quaternion((w, x, -y, z))
             scl = Vector(transform[7:10])
             mat = Matrix.Translation(pos) @ rot.to_matrix().to_4x4() @ Matrix.Scale(1, 4, scl)
             if key_values and 'model' in key_values:
                 object_name = key_values.get('targetname', f'{class_name}_{key_values["uuid"]}')
-                if '*' in key_values['model'] or not key_values['model']:
+                if not key_values['model'] or '*' in key_values['model']:
                     continue
+
                 model_path = CM.find_path(key_values['model'], 'models', '.pmdl')
                 if model_path is None:
                     print(f"Failed to load {key_values['model']!r}")
                     continue
 
                 type_collection = get_or_create_collection(class_name, self.master_collection)
-                loader = import_pmdl(model_path, scale, type_collection,
-                                     class_name.startswith('func_') or class_name.startswith('trigger_'))
+                loader = import_pmdl(model_path, scale, type_collection, not class_name.startswith('prop_'))
                 if loader.is_static_prop:
                     for obj in loader.objects:
                         obj.name = object_name

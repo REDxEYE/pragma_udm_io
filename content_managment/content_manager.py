@@ -1,4 +1,5 @@
 import logging
+from functools import lru_cache
 from pathlib import Path
 from typing import Union, Dict, List, TypeVar, Optional
 
@@ -48,24 +49,25 @@ class ContentManager(metaclass=SingletonMeta):
         yield from self.root_provider.glob(pattern)
 
     def find_file(self, filepath: Union[str, Path], additional_dir=None, extension=None, *, silent=False):
+        raise NotImplementedError('Don\'t use this function')
+        # new_filepath = Path(str(filepath).strip('/\\').rstrip('/\\'))
+        # if additional_dir:
+        #     new_filepath = Path(additional_dir, new_filepath)
+        # if extension:
+        #     new_filepath = new_filepath.with_suffix(extension)
+        # if not silent:
+        #     logger.info(f'Requesting {new_filepath} file')
+        # for mod, submanager in self.content_providers.items():
+        #     file = (submanager.find_file(new_filepath) or
+        #             submanager.find_file(new_filepath.with_suffix(new_filepath.suffix + '_b')))
+        #     if file is not None:
+        #         if not silent:
+        #             logger.debug(f'Found in {mod}!')
+        #         return file
+        # return (self.root_provider.find_file(new_filepath) or
+        #         self.root_provider.find_file(new_filepath.with_suffix(new_filepath.suffix + '_b')))
 
-        new_filepath = Path(str(filepath).strip('/\\').rstrip('/\\'))
-        if additional_dir:
-            new_filepath = Path(additional_dir, new_filepath)
-        if extension:
-            new_filepath = new_filepath.with_suffix(extension)
-        if not silent:
-            logger.info(f'Requesting {new_filepath} file')
-        for mod, submanager in self.content_providers.items():
-            file = (submanager.find_file(new_filepath) or
-                    submanager.find_file(new_filepath.with_suffix(new_filepath.suffix + '_b')))
-            if file is not None:
-                if not silent:
-                    logger.debug(f'Found in {mod}!')
-                return file
-        return (self.root_provider.find_file(new_filepath) or
-                self.root_provider.find_file(new_filepath.with_suffix(new_filepath.suffix + '_b')))
-
+    @lru_cache(128)
     def find_path(self, filepath: Union[str, Path], additional_dir=None, extension=None, *, silent=False):
         new_filepath = Path(str(filepath).strip('/\\').rstrip('/\\'))
         if additional_dir:
