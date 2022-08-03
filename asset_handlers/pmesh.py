@@ -3,27 +3,29 @@ from typing import Dict
 import bpy
 import numpy as np
 
-from ..pragma_udm_wrapper import UdmProperty
+from ..pragma_udm_wrapper.properties import ElementProperty
 from pragma_udm_io.utils import ROTN90_X, transform_vec3_array, get_material
 
 
-def import_pmesh(name_prefix, asset: UdmProperty, root: UdmProperty, bone_names: Dict[int, str], scale):
+def import_pmesh(name_prefix, asset: ElementProperty, root: ElementProperty, bone_names: Dict[int, str], scale):
     assert asset['assetType'] == 'PMESH'
     sub_mesh_data = asset['assetData']
     assert sub_mesh_data['geometryType'] == 'Triangles'
     skin_id = sub_mesh_data['skinMaterialIndex']
-    vertices: np.ndarray = sub_mesh_data['vertices']
-    indices: np.ndarray = sub_mesh_data['indices']
+    vertices: np.ndarray = sub_mesh_data['vertices'].value()
+    indices: np.ndarray = sub_mesh_data['indices'].value()
 
     material_name = root['materials'][skin_id]
     mesh_data = bpy.data.meshes.new(f'{name_prefix}_{material_name}_MESH')
     mesh_obj = bpy.data.objects.new(f'{name_prefix}_{material_name}', mesh_data)
+    # pos = vertices['pos'] * scale
     pos = transform_vec3_array(vertices['pos'], ROTN90_X) * scale
     mesh_data.from_pydata(pos, [], indices.reshape((-1, 3)).tolist())
     mesh_data.update()
 
-    mesh_data.polygons.foreach_set("use_smooth", np.ones(len(mesh_data.polygons)))
+    mesh_data.polygons.foreach_set("use_smooth", np.ones(len(mesh_data.polygons), np.bool))
 
+    # normals = vertices['n']
     normals = transform_vec3_array(vertices['n'], ROTN90_X)
     mesh_data.normals_split_custom_set_from_vertices(normals)
     mesh_data.use_auto_smooth = True
@@ -47,7 +49,7 @@ def import_pmesh(name_prefix, asset: UdmProperty, root: UdmProperty, bone_names:
     if 'vertexWeights' in sub_mesh_data and bone_names:
         weight_groups = {bone: mesh_obj.vertex_groups.new(name=bone) for bone in
                          bone_names.values()}
-        weights: np.ndarray = sub_mesh_data['vertexWeights']
+        weights: np.ndarray = sub_mesh_data['vertexWeights'].value()
         for n, weights in enumerate(weights):
             for bone_index, weight in zip(weights['id'], weights['w']):
                 if weight >= 0 and bone_index >= 0:

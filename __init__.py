@@ -1,11 +1,12 @@
 import bpy
 from pragma_udm_io.ui import *
+from pragma_udm_io.ui.operators import PRAGMA_OT_PMAPImport
 
 bl_info = {
     "name": "Pragma UDM IO",
     "author": "RED_EYE",
     "version": (0, 0, 3),
-    "blender": (2, 80, 0),
+    "blender": (2, 90, 0),
     "location": "File > Import-Export > UDM assets",
     "description": "Pragma Engine assets. "
                    "To remove addon, disable it, restart blender and then click \"remove\" button",
@@ -16,6 +17,7 @@ classes = (
     PragmaPluginPreferences,
     PRAGMA_OT_PMLDImport,
     PRAGMA_OT_PMATImport,
+    PRAGMA_OT_PMAPImport,
     PRAGMA_MT_Menu,
 )
 

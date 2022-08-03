@@ -1,12 +1,12 @@
 import logging
 from functools import lru_cache
 from pathlib import Path
-from typing import Union, Dict, List, TypeVar, Optional
+from typing import Union, Dict, TypeVar, Optional
 
-from .content_provider_base import ContentProviderBase
-from .root_provider import RootDirectoryProvider
-from .addon_provider import AddonProvider
-from ..singleton import SingletonMeta
+from pragma_udm_io.content_managment.providers.icontent_provider import IContentProvider
+from pragma_udm_io.content_managment.providers.root_provider import RootDirectoryProvider
+from pragma_udm_io.content_managment.providers.addon_provider import AddonProvider
+from pragma_udm_io.utils.singleton import SingletonMeta
 
 logger = logging.getLogger('ContentManager')
 
@@ -36,7 +36,7 @@ class ContentManager(metaclass=SingletonMeta):
 
     def get_relative_path(self, filepath: Path):
         for _, content_provider in self.content_providers.items():
-            content_provider: ContentProviderBase
+            content_provider: IContentProvider
             if filepath.is_absolute() and filepath.is_relative_to(content_provider.root):
                 return filepath.relative_to(content_provider.root)
             elif not filepath.is_absolute() and content_provider.find_file(filepath):
@@ -50,22 +50,6 @@ class ContentManager(metaclass=SingletonMeta):
 
     def find_file(self, filepath: Union[str, Path], additional_dir=None, extension=None, *, silent=False):
         raise NotImplementedError('Don\'t use this function')
-        # new_filepath = Path(str(filepath).strip('/\\').rstrip('/\\'))
-        # if additional_dir:
-        #     new_filepath = Path(additional_dir, new_filepath)
-        # if extension:
-        #     new_filepath = new_filepath.with_suffix(extension)
-        # if not silent:
-        #     logger.info(f'Requesting {new_filepath} file')
-        # for mod, submanager in self.content_providers.items():
-        #     file = (submanager.find_file(new_filepath) or
-        #             submanager.find_file(new_filepath.with_suffix(new_filepath.suffix + '_b')))
-        #     if file is not None:
-        #         if not silent:
-        #             logger.debug(f'Found in {mod}!')
-        #         return file
-        # return (self.root_provider.find_file(new_filepath) or
-        #         self.root_provider.find_file(new_filepath.with_suffix(new_filepath.suffix + '_b')))
 
     @lru_cache(128)
     def find_path(self, filepath: Union[str, Path], additional_dir=None, extension=None, *, silent=False):

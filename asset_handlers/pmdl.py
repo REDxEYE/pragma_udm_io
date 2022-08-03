@@ -14,8 +14,9 @@ from ..utils import get_or_create_collection, get_new_unique_collection, ROTN90_
 
 class PMDLLoader:
 
-    def __init__(self, path: Path, parent_collection=None, no_collections=False):
+    def __init__(self, path: Path, scale=1.0, parent_collection=None, no_collections=False):
         self.path = path
+        self.scale = scale
         self._udm_file = UDM()
         assert self._udm_file.load(path), f'Failed to load "{path}"'
         self.root = self._udm_file.root
@@ -49,12 +50,12 @@ class PMDLLoader:
         return self.path.stem
 
     def load_armature(self):
-        self._bone_names, self._armature_obj = import_pskel(self.model_name, self.root['skeleton'])
+        self._bone_names, self._armature_obj = import_pskel(self.model_name, self.root['skeleton'], self.scale)
 
     def _find_flexes_by_ids(self, mesh_group_id: int, mesh_id: int, sub_mesh_id: int):
         if 'morphTargetAnimations' in self.root:
             flexes = []
-            for flex in self.root['morphTargetAnimations']:
+            for flex in self.root['morphTargetAnimations'].values():
                 assert flex['assetType'] == "PMORPHANI"
                 flex_data = flex['assetData']
                 for mesh_anim in flex_data['meshAnimations']:
@@ -65,16 +66,17 @@ class PMDLLoader:
             return flexes
         return []
 
-    def load_mesh(self, scale):
-        mesh_groups = {mesh_group['index']: mesh_group for mesh_group in self.root['meshGroups']}
+    def load_mesh(self):
+        mesh_groups = {mesh_group['index']: mesh_group for mesh_group_name, mesh_group in
+                       self.root['meshGroups'].items()}
         if 'bodyGroups' in self.root:
-            for body_group in self.root['bodyGroups']:
+            for body_group in self.root['bodyGroups'].values():
                 for mesh_group_id in body_group['meshGroups']:
                     mesh_group = mesh_groups[mesh_group_id]
-                    self._load_mesh_group(mesh_group, scale)
+                    self._load_mesh_group(mesh_group, self.scale)
         elif 'meshGroups' in self.root:
-            for mesh_group in self.root['meshGroups']:
-                self._load_mesh_group(mesh_group, scale)
+            for mesh_group in self.root['meshGroups'].values():
+                self._load_mesh_group(mesh_group, self.scale)
             pass
 
     def _load_mesh_group(self, mesh_group, scale):
@@ -82,7 +84,7 @@ class PMDLLoader:
         for mesh_id, mesh in enumerate(mesh_group['meshes']):
             for sub_mesh_id, sub_mesh in enumerate(mesh['subMeshes']):
                 sub_mesh_prefix = f'{mesh_group.name}_{mesh_id}'
-                mesh_obj = import_pmesh(sub_mesh_prefix, sub_mesh, self.root, self._bone_names,scale)
+                mesh_obj = import_pmesh(sub_mesh_prefix, sub_mesh, self.root, self._bone_names, scale)
                 mesh_data = mesh_obj.data
                 flexes = self._find_flexes_by_ids(mesh_group_id, mesh_id, sub_mesh_id)
                 if len(flexes) > 0:
@@ -103,8 +105,9 @@ class PMDLLoader:
                             shape_key = (mesh_data.shape_keys.key_blocks.get(full_flex_name, None) or
                                          mesh_obj.shape_key_add(name=full_flex_name))
                             flex_pos = pos.copy()
+                            position_ = attribs['position'].value()
                             flex_pos[flex_indices] += transform_vec3_array(
-                                attribs['position'].view(np.float16).reshape((-1, 4))[:, :3], ROTN90_X)
+                                position_.view(np.float16).reshape((-1, 4))[:, :3], ROTN90_X)
                             flex_pos *= scale
                             shape_key.data.foreach_set("co", flex_pos.reshape(-1))
 
@@ -132,8 +135,8 @@ class PMDLLoader:
                 obj.parent = self._armature_obj
                 # self.master_collection.objects.link(obj)
         if 'bodyGroups' in self.root:
-            for body_group in self.root['bodyGroups']:
-                bg_collection = (get_or_create_collection(body_group.name, self._master_collection)
+            for body_group_name, body_group in self.root['bodyGroups'].items():
+                bg_collection = (get_or_create_collection(body_group_name, self._master_collection)
                                  if no_collections else self._master_collection)
                 for mesh_group in body_group['meshGroups']:
                     for obj in self._object_by_meshgroup[mesh_group]:
@@ -149,9 +152,9 @@ class PMDLLoader:
 
 
 def import_pmdl(path: Path, scale=1.0, parent_collection=None, no_collections=False):
-    loader = PMDLLoader(path, parent_collection)
+    loader = PMDLLoader(path, scale, parent_collection)
     loader.load_armature()
-    loader.load_mesh(scale)
+    loader.load_mesh()
     loader.load_textures()
     loader.finalize(no_collections)
     loader.cleanup()

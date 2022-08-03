@@ -1,10 +1,10 @@
 from pathlib import Path
 from typing import Union
 
-from .content_provider_base import ContentProviderBase
+from pragma_udm_io.content_managment.providers.icontent_provider import ICachebleContentProvider
 
 
-class RootDirectoryProvider(ContentProviderBase):
+class RootDirectoryProvider(ICachebleContentProvider):
     def find_file(self, filepath: Union[str, Path]):
         return self._find_file_generic(filepath)
 

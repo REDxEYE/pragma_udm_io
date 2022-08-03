@@ -3,7 +3,7 @@ from pathlib import Path
 import bpy
 
 from ..content_managment.content_manager import ContentManager
-from ..pragma_udm_wrapper import UdmProperty
+from ..pragma_udm_wrapper.properties import ElementProperty
 from ..utils.node import *
 from .vtf import load_texture
 from ..utils.texture_utils import texture_from_data
@@ -14,7 +14,10 @@ def _load_textures(textures):
     maps = {}
     for map_name, texture in textures.items():
         path: Path = (cm.find_path(texture, 'materials', extension='.dds') or
-                      cm.find_path(texture, 'materials', extension='.vtf'))
+                      cm.find_path(texture, 'materials', extension='.vtf') or
+                      cm.find_path(texture, 'materials', extension='.png') or
+                      cm.find_path(texture, 'materials', extension='.jpg')
+                      )
         if path is None:
             continue
         if path.suffix == '.vtf':
@@ -99,7 +102,7 @@ def _add_rma_map(material, properties, maps, shader):
             connect_nodes(material, rma_split.outputs['B'], shader.inputs['Metallic'])
 
 
-def _handle_pbr(material_asset: UdmProperty, material_name: str):
+def _handle_pbr(material_asset: ElementProperty, material_name: str):
     maps = _load_textures(material_asset['textures'])
     properties = material_asset['properties']
 
@@ -133,7 +136,7 @@ def _handle_pbr(material_asset: UdmProperty, material_name: str):
         shader.inputs['Emission Strength'].default_value = properties.get('emission_factor', 1.0)
 
 
-def _handle_pbr_blend(material_asset: UdmProperty, material_name: str):
+def _handle_pbr_blend(material_asset: ElementProperty, material_name: str):
     maps = _load_textures(material_asset['textures'])
     properties = material_asset['properties']
 
@@ -177,7 +180,7 @@ def _handle_pbr_blend(material_asset: UdmProperty, material_name: str):
         shader.inputs['Emission Strength'].default_value = properties.get('emission_factor', 1.0)
 
 
-def _handle_unlit(material_asset: UdmProperty, material_name: str):
+def _handle_unlit(material_asset: ElementProperty, material_name: str):
     maps = _load_textures(material_asset['textures'])
     properties = material_asset['properties']
 
@@ -203,7 +206,7 @@ def _handle_unlit(material_asset: UdmProperty, material_name: str):
         _add_alpha(material, properties, albedo, shader)
 
 
-def _handle_water(material_asset: UdmProperty, material_name: str):
+def _handle_water(material_asset: ElementProperty, material_name: str):
     maps = _load_textures(material_asset['textures'])
     properties = material_asset['properties']
 
@@ -229,7 +232,7 @@ def _handle_water(material_asset: UdmProperty, material_name: str):
     _add_normal_map(material, maps, shader)
 
 
-def import_pmat(asset: UdmProperty, material_name: str):
+def import_pmat(asset: ElementProperty, material_name: str):
     if 'pbr' in asset:
         return _handle_pbr(asset['pbr'], material_name)
     elif 'pbr_blend' in asset:
@@ -239,6 +242,6 @@ def import_pmat(asset: UdmProperty, material_name: str):
     elif 'water' in asset:
         return _handle_water(asset['water'], material_name)
     else:
-        print(asset.to_dict())
+        print(asset.to_json())
         print(f'Unsupported shader {next(asset.items())[0]}')
         return 'UNSUPPORTED'

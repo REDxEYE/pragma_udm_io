@@ -8,7 +8,7 @@ from pragma_udm_io.utils import *
 from .pmdl import import_pmdl
 from ..pragma_udm_wrapper import UDM
 from ..content_managment.content_manager import ContentManager
-from ..pragma_udm_wrapper import UdmProperty
+from ..pragma_udm_wrapper.properties import ElementProperty
 
 CM = ContentManager()
 
@@ -31,7 +31,7 @@ class PMAPLoader:
         for ent in self.root['entities']:
             class_name = ent['className']
             key_values = ent.get('keyValues', {})
-            ent: UdmProperty
+            ent: ElementProperty
             transform = ent['pose']
             pos = Vector(transform_vec3(transform[0:3], ROTN90_X)) * scale
             x, z, y, w = transform[3:7]

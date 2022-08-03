@@ -10,6 +10,8 @@ from .node import Nodes
 ROT90_X = Euler([math.radians(90), 0, 0]).to_matrix().to_4x4()
 ROTN90_X = Euler([math.radians(-90), 0, 0]).to_matrix().to_4x4()
 ROT90_Y = Euler([0, math.radians(90), 0]).to_matrix().to_4x4()
+ROTN90_Y = Euler([0, math.radians(-90), 0]).to_matrix().to_4x4()
+ROT180_Y = Euler([0, math.radians(180), 0]).to_matrix().to_4x4()
 ROT90_Z = Euler([0, 0, math.radians(90)]).to_matrix().to_4x4()
 ROTN90_Z = Euler([0, 0, math.radians(-90)]).to_matrix().to_4x4()
 

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import bpy
 
 
@@ -100,12 +102,16 @@ class Nodes:
     ShaderNodeWireframe = 'ShaderNodeWireframe'
 
 
+def create_texture(texture_path: Path):
+    return bpy.data.images.load(texture_path.as_posix())
+
+
 def clean_nodes(material):
     for node in material.node_tree.nodes:
         material.node_tree.nodes.remove(node)
 
 
-def create_node(material, node_type: str, name: str = None, location = None):
+def create_node(material, node_type: str, name: str = None, location=None):
     node = material.node_tree.nodes.new(node_type)
     if name:
         node.name = name
