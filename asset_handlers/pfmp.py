@@ -28,6 +28,8 @@ class Actor:
     child_objects: List[bpy.types.Object] = field(default_factory=list)
     object: Optional[bpy.types.Object] = field(default=None)
 
+def convert_loc(x): return Vector([x[0], -x[2], x[1]])
+def convert_quat(q): return Quaternion([q[3], q[0], -q[2], q[1]])
 
 class PFMPLoader:
 
@@ -122,7 +124,6 @@ class PFMPLoader:
                                 actor.object.animation_data.action = animation_action
                                 actor.object.animation_data.action = animation_action
                                 actor.object.animation_data.action = animation_action
-                                print(actor.object.animation_data)
 
                                 for channel in animation_data['channels']:
                                     values = channel['values'].value()
@@ -143,11 +144,7 @@ class PFMPLoader:
                                         raise NotImplementedError(channel['targetPath'])
 
     def _convert_rotation(self, rot):
-        mat = pose_to_matrix(rot=rot)
-        print('Mat input', mat)
-        converted = convert_pragma_matrix(mat)
-        print('Mat converted', converted)
-        return Matrix(converted).decompose()[1]
+        return convert_quat(rot)
 
     def _load_bone_animation(self, action: bpy.types.Action, bone_name: str, channel: str,
                              values: np.ndarray, times: np.ndarray):
@@ -177,11 +174,18 @@ class PFMPLoader:
         if channel == 'rotation':
             for keyframe_id, (time, value) in enumerate(zip(times, values)):
                 frame_id = int(time * scene_fps)
-                print('Frame ', frame_id)
-                print('WXYZ', value.round(1))
-                value = self._convert_rotation(value)
-                print('WXYZ converted', value)
-                print('========')
+                #print('Frame ', frame_id)
+                #print('WXYZ', value.round(1))
+                value = [value[1],value[2],value[3],value[0]]
+                value = convert_quat(value)
+
+                # TODO: Get these from pskel
+                rotBefore = Quaternion((0.7071068286895752, 0.0, 0.0, -0.7071068286895752))
+                rotAfter = Quaternion((0.7071068286895752, 0.0, 0.0, 0.7071068286895752))
+                value = rotAfter @ value @ rotBefore
+
+                #print('WXYZ converted', value)
+                #print('========')
                 for i in range(curve_count):
                     frame = curves[i].keyframe_points[keyframe_id]
                     frame.co = (frame_id, value[i])
@@ -189,6 +193,7 @@ class PFMPLoader:
         else:
             for keyframe_id, (time, value) in enumerate(zip(times, values)):
                 frame_id = int(time * scene_fps)
+                #value = convert_loc(value)
 
                 for i in range(curve_count):
                     frame = curves[i].keyframe_points[keyframe_id]
